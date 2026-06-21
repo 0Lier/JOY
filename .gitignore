@@ -1,0 +1,12 @@
+# Archivos de configuración local (¡Aquí va tu .env!)
+.env
+
+# Carpetas de caché que genera Python automáticamente
+__pycache__/
+
+# Entornos virtuales (si usas venv, virtualenv, venv, etc.)
+.venv/
+venv/
+env/
+memory/
+
