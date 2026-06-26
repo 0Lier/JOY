@@ -2,6 +2,7 @@ import os
 import sys
 import random
 import platform
+import json
 from time import sleep
 from datetime import datetime
 from threading import Thread
@@ -16,6 +17,11 @@ import handler_animo
 import cloud_agent as agent
 
 IS_WINDOWS = platform.system() == "Windows"
+
+with open("config.json", "r", encoding="utf-8") as f:
+    config = json.load(f)  
+
+bot_name = config["name"]
 
 if IS_WINDOWS:
     import msvcrt
@@ -36,11 +42,29 @@ estados = handler_animo.obtener_animo()
 
 layout = Layout()
 console = Console()
-layout.split_row(
+
+layout.split_column(
+    Layout(name="body", ratio=1),
+    Layout(name="footer", size=3) 
+)
+
+layout["body"].split_row(
     Layout(name="face", ratio=1),
     Layout(name="prompt", ratio=2)
 )
+
 animo_actual = "Vacio"
+
+def time_med(lista):
+    sum = 0
+    if isinstance(lista, list):
+        for x in lista:
+            sum += float(x)
+    if len(lista) > 0:
+        prom = sum / len(lista)
+    else:
+        prom = 0
+    return prom
 
 
 def set_idle():
@@ -55,7 +79,7 @@ def set_idle():
     while animo_actual == "idle":
         frame = frames[value]
         align_face = Align.center(frame, vertical="middle")
-        layout["face"].update(Panel(align_face, title="JOY"))
+        layout["face"].update(Panel(align_face, title=bot_name))
         pasado = 0.0
         while pasado < sleep_value:
             if animo_actual != "idle":
@@ -89,7 +113,7 @@ def set_laugh():
     while animo_actual == "laugh":
         frame = frames[value]
         align_face = Align.center(frame, vertical="middle")
-        layout["face"].update(Panel(align_face, title="JOY"))
+        layout["face"].update(Panel(align_face, title=bot_name))
         sleep(0.3)
         tiempo_de_vida += 0.3
         if tiempo_de_vida > 5.0:
@@ -116,7 +140,7 @@ def set_angry():
     # SI SOLO HAY 1 SPRITE: Lo dibuja una vez y mantiene el bucle sin mover índices
     if len(frames) == 1:
         align_face = Align.center(frames[0], vertical="middle")
-        layout["face"].update(Panel(align_face, title="JOY"))
+        layout["face"].update(Panel(align_face, title=bot_name))
         tiempo_de_vida = 0.0
         while animo_actual == "angry":
             sleep(0.3)
@@ -134,7 +158,7 @@ def set_angry():
     while animo_actual == "angry":
         frame = frames[value]
         align_face = Align.center(frame, vertical="middle")
-        layout["face"].update(Panel(align_face, title="JOY"))
+        layout["face"].update(Panel(align_face, title=bot_name))
         sleep(0.3)
         tiempo_de_vida += 0.3
         if tiempo_de_vida > 5.0:
@@ -165,7 +189,7 @@ def set_boring():
     while animo_actual == "boring":
         frame = frames[value]
         align_face = Align.center(frame, vertical="middle")
-        layout["face"].update(Panel(align_face, title="JOY"))
+        layout["face"].update(Panel(align_face, title=bot_name))
         sleep(0.3)
         tiempo_de_vida += 0.3
         if tiempo_de_vida > 5.0:
@@ -196,7 +220,7 @@ def set_sad():
     while animo_actual == "sad":
         frame = frames[value]
         align_face = Align.center(frame, vertical="middle")
-        layout["face"].update(Panel(align_face, title="JOY"))
+        layout["face"].update(Panel(align_face, title=bot_name))
         sleep(0.3)
         tiempo_de_vida += 0.3
         if tiempo_de_vida > 5.0:
@@ -275,12 +299,13 @@ def controlador_de_cara(estado):
 texto_usuario = "Ninguno"
 
 Thread(target=set_idle, daemon=True).start()
-
+model = ["No Definido"]
+restime = []
 with setup_terminal():
     with Live(layout, refresh_per_second=20):
         while True:
             _, rows = os.get_terminal_size()
-            max_lineas = max(3, rows - 7) 
+            max_lineas = max(1, rows - 8)
 
             # Procesamos las líneas reales subdivididas por el cloud_agente
             todas_las_lineas = []
@@ -313,7 +338,7 @@ with setup_terminal():
                                     ia_pensando = True  
                                     Thread(
                                         target=agent.probar_stream_ollama, 
-                                        args=(texto_usuario, historial, controlador_de_cara), 
+                                        args=(texto_usuario, historial, controlador_de_cara, model, restime), 
                                         daemon=True
                                     ).start()
 
@@ -337,14 +362,25 @@ with setup_terminal():
             pantalla_historial = "\n".join(todas_las_lineas[inicio:fin])
 
             if ia_pensando:
-                linea_input = "[bold yellow]⏳ JOY está pensando...[/bold yellow]"
+                linea_input = f"[bold yellow]⏳ {bot_name} está pensando...[/bold yellow]"
             else:
-                linea_input = f"👉 Escribe algo: [bold cyan]{input_buffer}█[/bold cyan]"
+                linea_input = f"> [bold cyan]{input_buffer}█[/bold cyan]"
 
             layout["prompt"].update(Panel(
                 f"{pantalla_historial}\n\n"
                 f"{linea_input}", 
                 title="Consola (↑/↓ para scrollear)"
+            ))
+
+
+            texto_footer = (
+                f"Modelo: {model[0]} "
+                f"- Tiempo de Respuesta: {round(time_med(restime),2)}"
+            )
+
+            layout["footer"].update(Panel(
+                Align.center(texto_footer, vertical="middle"),
+                style="gray37" 
             ))
             
             sleep(0.02)

@@ -1,0 +1,7 @@
+import sys
+
+def enojado():
+    print("¡Estoy muy enojado con Victor!")
+
+if __name__ == "__main__":
+    enojado()

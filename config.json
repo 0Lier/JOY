@@ -1,0 +1,16 @@
+{
+    "name": "JOY",
+    "blocked": false,
+    "terminal_blocked": [
+        "rm -rf", 
+        "rm ", 
+        "sudo", 
+        "ufw",
+        "del ", 
+        "rmdir", 
+        "format ", 
+        "shutdown", 
+        "diskpart", 
+        "reg delete"
+    ]
+}
